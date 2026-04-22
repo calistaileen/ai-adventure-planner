@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrailSeeker — Login</title>
+
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/auth.js" defer></script>
+  <script src="/static/login.js" defer></script>
+
+  <style>
+    /* ==== VIDEO BACKGROUND ==== */
+    #bgVideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -1;
+      pointer-events: none;
+      filter: brightness(0.70); /* optional: biar tulisan lebih jelas */
+    }
+
+    /* ==== MAIN LAYOUT ==== */
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ==== LOGO HEADER ==== */
+    header {
+      position: absolute;
+      top: 20px;
+      left: 30px;
+      font-weight: bold;
+      font-size: 22px;
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      z-index: 2;
+    }
+
+    /* ==== LOGIN BOX ==== */
+   .login-box {
+  background: rgba(255, 255, 255, 0.02); /* hampir tidak kelihatan (clear glass) */
+  backdrop-filter: blur(3px);            /* blur sangat kecil = kaca bening */
+  -webkit-backdrop-filter: blur(3px);
+  border: 1px solid rgba(255, 255, 255, 0.15); /* kaca tipis */
+  padding: 40px 45px;
+  border-radius: 25px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); /* shadow lembut utk memunculkan bentuk */
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  z-index: 2;
+}
+
+
+
+
+
+    .login-box h3 {
+      margin-bottom: 24px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* ==== INPUTS ==== */
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #8d6e63;
+      box-shadow: 0 0 4px rgba(141, 110, 99, 0.3);
+    }
+
+    /* ==== BUTTON ==== */
+    button {
+      width: 100%;
+      background-color: #6b4f3b;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 0;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.25s;
+      margin-top: 12px;
+    }
+
+    button:hover {
+      background-color: #5a4030;
+    }
+
+    /* ==== ERROR BOX ==== */
+    #loginError {
+      display: none;
+      background: #fdecea;
+      color: #b71c1c;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    /* ==== FOOTER LINKS ==== */
+    .helper {
+  margin-top: 14px;
+  font-size: 14px;
+  color: #ffffff !important;
+}
+
+.helper a {
+  color: #ffffff !important;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.helper a:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+  </style>
+</head>
+
+<body>
+
+  <!-- ==== VIDEO BACKGROUND ==== -->
+  <video autoplay muted loop playsinline id="bgVideo">
+    <source src="/static/videos/loginbg.mp4" type="video/mp4" />
+  </video>
+
+  <header>TrailSeeker</header>
+
+  <main>
+    <section class="login-box">
+      <h3><b>Log in now and start your journey</b></h3>
+
+      <form id="loginForm" autocomplete="on">
+        <input id="email" type="email" placeholder="Email" required />
+        <input id="password" type="password" placeholder="Password" required />
+
+        <button type="submit"><b>Login</b></button>
+
+        <div id="loginError"></div>
+
+        <div class="helper">
+          <a href="register.html">Register now</a> ·
+          <a href="forget.html">Forgot password?</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Country</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/country.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <h1 class="logo">
+    <a href="/index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+  </h1>
+</header>
+
+<main class="front">
+  <section class="panel">
+    <h2 class="section-title" id="countryTitle">Country</h2>
+    <p class="small" id="countryDesc">Description will appear here.</p>
+  </section>
+
+  <section class="panel">
+    <h3 class="section-title">Choose a Region / Island</h3>
+    <div class="dest-grid" id="regionList"></div>
+    <p class="small" id="regionStatus" style="margin-top:12px">Loading...</p>
+  </section>
+
+  <section class="panel start-panel">
+    <div class="start-row">
+      <a href="index.html">← Back to Front Page</a>
+      <a class="start-btn" id="plannerLink" href="#">Open Planner</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+</footer>
+</body>
+</html>

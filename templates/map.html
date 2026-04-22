@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Travel Planner Map</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='map.css') }}" />
+  <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAAAAACw=" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand"><span class="dot"></span> Travel Planner</div>
+
+      <!-- Search -->
+      <div class="card section">
+        <div class="section-head">
+          <div class="section-title"><span class="emoji">🔎</span> Search Places</div>
+        </div>
+        <div class="controls">
+          <input id="place-input" placeholder="Search by name or address" />
+          <button id="btn-clear" class="btn">Clear</button>
+        </div>
+        <div class="small" style="margin-top:6px;">Press Enter or select from suggestions.</div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card section">
+        <div class="section-head">
+          <div class="section-title"><span class="emoji">⭐</span> Recommended Places</div>
+        </div>
+
+        <div class="rows">
+          <label class="mode-label" for="range-km">Recommendation Range (km)</label>
+          <div class="range-row">
+            <input id="range-km" type="number" min="0.5" step="0.5" value="3" />
+            <span class="cap">(Max <span id="range-cap">30</span> km)</span>
+          </div>
+        </div>
+
+        <div class="row-actions">
+          <button id="btn-suggest" class="btn btn-primary">Find Recommendations</button>
+          <button id="btn-clear-suggest" class="btn">Clear</button>
+        </div>
+
+        <div class="help small">Searches within each day’s locations (max 30 km). Click a star to add to your itinerary.</div>
+      </div>
+
+      <!-- My Trip tabs -->
+      <div class="card section">
+        <div class="section-head">
+          <div class="section-title"><span class="emoji">🗂️</span> My Trip</div>
+        </div>
+        <div class="row-actions" id="day-tabs">
+          <button type="button" class="btn btn-ghost active" data-day="1">Day 1</button>
+          <button type="button" class="btn btn-ghost" data-day="2">Day 2</button>
+          <button type="button" class="btn" id="add-day-btn">＋ Add Day</button>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="card section">
+        <div id="timeline-head">
+          <div id="timeline-title" class="tl-day">Timeline (Day <span id="tl-day-num">1</span>)</div>
+          <label class="tl-start">Start time <input id="tl-start" type="time" value="10:00" /></label>
+        </div>
+        <div id="timeline"></div>
+        <button id="btnAiLegs" class="btn">AI Plan Transport</button>
+      </div>
+
+      <!-- 💰 Trip Budget -->
+      <div class="card section budget-card">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="emoji">💰</span> Trip Budget (Estimated)
+          </div>
+        </div>
+
+        <!-- People -->
+        <div class="budget-people-row">
+          <div class="label">
+            <span>👥 People</span>
+          </div>
+          <input id="budget-people" type="number" min="1" value="1" inputmode="numeric" />
+        </div>
+
+        <div class="budget-divider"></div>
+
+        <!-- Summary -->
+        <div id="budget-summary">
+          <div class="budget-row total">
+            <div class="label">Today's Estimated Cost Day</div>
+            <div class="amount" id="budget-total">–</div>
+          </div>
+
+          <div class="budget-row sub">
+            <div class="label">Attractions</div>
+            <div class="amount" id="budget-sights">–</div>
+          </div>
+
+          <div class="budget-row sub">
+            <div class="label">Food & Drinks</div>
+            <div class="amount" id="budget-food">–</div>
+          </div>
+
+          <div class="budget-row sub">
+            <div class="label">Transportation</div>
+            <div class="amount" id="budget-transport">–</div>
+          </div>
+        </div>
+
+        <p class="budget-note">
+          This estimate (in USD) is for the current day only, based on price levels and travel distance.
+          Actual costs may vary.
+        </p>
+      </div>
+
+
+      <!-- Save to DB -->
+      <div class="card section">
+        <div class="section-head">
+          <div class="section-title"><span class="emoji">💾</span> Save Itinerary</div>
+        </div>
+        <div class="rows">
+          <input id="trip-title" type="text" placeholder="Trip title (optional)" />
+          <textarea id="trip-notes" rows="2" placeholder="Notes (optional)" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;"></textarea>
+        </div>
+        <div class="route-actions">
+          <button id="btn-save-db" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Map Area -->
+    <main id="map"></main>
+  </div>
+
+  <!-- Hover Card -->
+  <div id="hover-card" class="hover-card" style="display:none">
+    <img id="hc-img" src="" alt="place"/>
+    <div class="pad">
+      <div class="name-row" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div id="hc-name" class="name">Place</div>
+        <span id="hc-price" class="badge"></span>
+      </div>
+      <div class="meta"><span id="hc-rating">★ N/A</span><span id="hc-user"></span></div>
+      <div id="hc-itin" class="hc-summary"></div>
+      <div id="hc-open" class="open-row"></div>
+      <div id="hc-hours" class="hours"></div>
+      <div id="hc-addr" class="addr"></div>
+      <div id="hc-phone" class="phone"></div>
+      <div id="hc-badges" class="badges"></div>
+      <div class="hc-actions">
+        <button id="hc-nav" class="btn">Navigate</button>
+        <button id="hc-add" class="btn primary">Add</button>
+      </div>
+      <div class="actions">
+        <a id="hc-view" target="_blank" rel="noopener">View on Google Maps</a>
+        <a id="hc-website" target="_blank" rel="noopener">Official Website</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Confirmation Modal -->
+  <div id="add-confirm" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:10000;">
+    <div style="background:#fff;color:#111;border-radius:12px;padding:16px;min-width:280px;box-shadow:0 10px 30px rgba(0,0,0,.2)">
+      <div id="add-name" style="margin-bottom:12px;font-weight:700">Add this place?</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="add-no"  class="btn">Cancel</button>
+        <button id="add-yes" class="btn btn-primary">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (Optional) Manual Add -->
+  <dialog id="dlg">
+    <form method="dialog" id="form-add">
+      <h3>Add Place</h3>
+      <label>Name <input name="name" required></label>
+      <label>Latitude <input name="lat" type="number" step="any" required></label>
+      <label>Longitude <input name="lng" type="number" step="any" required></label>
+      <label>Category <input name="category"></label>
+      <menu>
+        <button value="cancel">Cancel</button>
+        <button id="submit" value="ok">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- ✅ 傳遞登入使用者 ID -->
+  <script>
+  window.currentUserId = null;
+  </script>
+
+  <!-- 確保地圖初始化流程 -->
+<script>
+  window._mapsBoot = function(){
+    if (typeof window.initMap === 'function') {
+      window.initMap();  // kalau map.js sudah siap
+    } else {
+      window.__mapsReadyFlag = true; // kalau map.js belum siap, tandai dulu
+    }
+  };
+</script>
+  
+  <script>
+  window.addEventListener("DOMContentLoaded", async () => {
+    // 讀取 URL 參數
+    const params = new URLSearchParams(window.location.search);
+    const tripId = params.get("trip");
+  
+    if (tripId && window.SmartPlanner) {
+      await SmartPlanner.importTripById(tripId);
+    }
+  });
+  </script>
+
+<!-- 先載入你的程式，裡面定義 window.initMap -->
+<script src="{{ url_for('static', filename='map.js') }}" defer></script>
+
+<!-- 再載入 Google Maps，並指定 callback=initMap；只用 defer 就好 -->
+<script
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCUZ1VEQNPJkrDZ4mbRvwcJZJv0VQwjD30&libraries=places&callback=initMap">
+</script>
+
+
+
+</body>
+</html>

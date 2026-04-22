@@ -1,0 +1,415 @@
+window.initMap = function initMap() {
+  // 1) 建地圖
+  map = new google.maps.Map(document.getElementById('map'), {
+  center: DEFAULT_CENTER,
+  zoom:   DEFAULT_ZOOM,
+  streetViewControl: false,
+  mapTypeControl:    false,
+  });
+  window.__gmap = map;
+  window.map = map;
+
+  // 2) 建服務
+  placesService     = new google.maps.places.PlacesService(map);
+  directionsService = new google.maps.DirectionsService();
+
+  // 3) 需要的 patch 在這做（若有）
+  if (typeof patchDirectionsRouteOnce   === 'function') patchDirectionsRouteOnce();
+  if (typeof patchDirectionsRouteGlobal === 'function') patchDirectionsRouteGlobal();
+  if (typeof patchSetMapGuardOnce === 'function') patchSetMapGuardOnce();
+
+  // 4) 標示可用（統一呼叫 _signalMapReady）
+  try { _signalMapReady?.(); } catch(e) { console.warn(e); }
+
+  // 5) 其他你原本就有的初始化（fit bounds、setup controls 等）
+  try { safeSetCenterZoom?.(map, { stops: (window.stops||[]), fallbackCenter: DEFAULT_CENTER, fallbackZoom: DEFAULT_ZOOM }); } catch(e){}
+  try { setupSuggestControls?.(); } catch(e){}
+
+  // 5.1) 保證縮放達門檻 + 先套一次可見性
+  try { ensureMinZoom(); } catch(e){}
+  try { applySuggestionVisibility?.(); } catch(e){}
+  
+  // 6) OverlayView（要先 new 再 setMap）
+  try {
+    window.overlayView = new google.maps.OverlayView();
+    window.overlayView.onAdd    = function(){};
+    window.overlayView.draw     = function(){};
+    window.overlayView.onRemove = function(){};
+    window.overlayView.setMap(window.__gmap || map);
+  } catch(e){ console.warn('window.overlayView init error', e); }
+
+  // 7) DirectionsRenderer（只建一次）
+  try {
+    directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers:true, preserveViewport:false });
+    directionsRenderer.setMap(window.__gmap || map);
+  } catch(e){ console.warn('directionsRenderer init error', e); }
+
+  // 8) 事件
+  (window.__gmap || map).addListener('zoom_changed', () => {
+    console.log('zoom =', (window.__gmap || map).getZoom?.());
+  });
+  if (typeof applySuggestionVisibility === 'function') {
+    const gmap = window.__gmap || window.map;
+    if (gmap && typeof gmap.addListener === 'function') {
+      gmap.addListener('zoom_changed', applySuggestionVisibility);
+      applySuggestionVisibility(); // 進頁先套一次
+    }
+  }
+
+  // 9) Autocomplete
+  const input = document.getElementById('place-input');
+  if (input){
+    autocomplete = new google.maps.places.Autocomplete(input, {
+      fields:['place_id','geometry','name','rating','user_ratings_total','photos','types']
+    });
+    autocomplete.addListener('place_changed', () => {
+      const p = autocomplete.getPlace();
+      if(!p || !p.geometry) return;
+      addStopFromPlace(p, { kind: 'plan' });
+      input.value = '';
+      fitToRoute?.();
+    });
+  }
+
+  // 10) 載入行程（確保 services 就緒之後）
+  const mockPlan = [
+    { name:'NCNU 國立暨南國際大學正門', position:{ lat:23.9507, lng:120.9316 } },
+    { name:'桃米生態村',               position:{ lat:23.9586, lng:120.9681 } },
+    { name:'紙教堂（桃米生態村）',       position:{ lat:23.9589, lng:120.9664 } },
+    { name:'日月潭水社碼頭',             position:{ lat:23.8647, lng:120.9157 } },
+  ];
+
+  try {
+    const u = new URL(location.href);
+    const userTripId = u.searchParams.get('user_trip') || u.searchParams.get('utrip') || u.searchParams.get('id');
+    const tripId     = u.searchParams.get('trip');
+
+    if (userTripId) {
+      loadMyTrip(userTripId)
+        .then(() => applyAiLegsFromServer?.({ onlyMissing: true }))
+        .then(() => recomputeRouteSmart?.())
+        .then(() => fitToRoute?.())
+        .then(() => {
+          ensureMinZoom();                 // 確保載入/fit 後仍 ≥ 門檻
+          applySuggestionVisibility?.();   // 立刻套一次可見性
+        })
+        .catch(err => console.error('[initMap] loadMyTrip error:', err));
+    } else if (tripId) {
+      loadTrip(tripId, { base: API_BASE })
+        .then(() => applyAiLegsFromServer?.({ onlyMissing: true }))
+        .then(() => recomputeRouteSmart?.())
+        .then(() => fitToRoute?.())
+        .then(() => {
+          ensureMinZoom();                 // 確保載入/fit 後仍 ≥ 門檻
+          applySuggestionVisibility?.();   // 立刻套一次可見性
+        })
+        .catch(err => console.error('[initMap] loadTrip chain error:', err));
+    } else {
+      loadRecommendedPlan(mockPlan);
+      applyAiLegsFromServer?.()
+        .then(() => recomputeRouteSmart?.())
+        .then(() => fitToRoute?.())
+        .then(() => {
+          ensureMinZoom();                 // 確保載入/fit 後仍 ≥ 門檻
+          applySuggestionVisibility?.();   // 立刻套一次可見性
+        })
+        .catch(err => console.error('[initMap] demo chain error:', err));
+    }
+  } catch (e) {
+    console.warn('URL 參數解析失敗', e);
+    loadRecommendedPlan(mockPlan);
+    fitToRoute?.();
+  }
+
+  // 11) 只呼叫一次，避免重綁事件
+  try { setupSuggestControls?.(); } catch(e){}
+
+  // 12) UI buttons
+  document.getElementById('btn-clear')?.addEventListener('click', clearAll);
+  document.getElementById('btn-fit')?.addEventListener('click', fitToRoute);
+  const btnExport = document.getElementById('btn-export');
+  if (btnExport){
+    btnExport.addEventListener('click', ()=>{
+      const data = (window.stops||[]).map(({id,placeId,name,position,rating,userRatingsTotal,photoUrl,badges}) =>
+        ({id,placeId,name,position,rating,userRatingsTotal,photoUrl,badges})
+      );
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      alert('已複製行程 JSON 到剪貼簿');
+    });
+  }
+};
+
+
+# ==============================================================
+#                   Helpers (新增)
+# ==============================================================
+
+def _request_uid():
+    """
+    統一取得請求端的 UID：
+    優先讀 Header: X-UID -> Cookie: uid -> 最後退回 _uid_token()
+    """
+    uid = request.headers.get("X-UID")
+    if uid:
+        return uid
+    uid = request.cookies.get("uid")
+    if uid:
+        return uid
+    try:
+        return _uid_token()
+    except Exception:
+        return None
+
+
+# =============== USER TRIPS (CREATE / UPDATE / LIST / GET) ===============
+
+@app.post("/api/user_trips")
+def create_or_update_user_trip():
+    conn = get_db()
+    uid  = current_user_id()     # 可能為 None（未登入）
+    tok  = _request_uid()        # 綁定匿名或登入使用者
+
+    data  = request.get_json(silent=True) or {}
+    title = (data.get("title") or "Untitled Trip").strip()
+
+    # 把前端行程物件通通裝進 notes (字串 JSON)
+    payload = {
+        "title": title,
+        "notes": data.get("notes"),
+        "stops": data.get("stops") or data.get("points") or [],
+        "days":  data.get("days") or [],
+        "meta":  data.get("meta") or {},
+    }
+    notes_json   = json.dumps(payload, ensure_ascii=False)
+    base_trip_id = data.get("base_trip_id")
+
+    try:
+        with conn.cursor() as cur:
+            # 先找：同一使用者(或同 token) + 同標題 是否已存在
+            cur.execute("""
+                SELECT id, updated_at
+                FROM user_trips
+                WHERE (user_id <=> %s OR user_token = %s)
+                  AND title = %s
+                LIMIT 1
+            """, (uid, tok, title))
+            exist = cur.fetchone()
+
+            if exist:
+                # 覆蓋同名
+                cur.execute("""
+                    UPDATE user_trips
+                    SET notes = %s, updated_at = NOW()
+                    WHERE id = %s
+                """, (notes_json, exist["id"]))
+
+                resp = jsonify({
+                    "ok": True,
+                    "id": exist["id"],
+                    "user_trip_id": exist["id"],     # 兼容前端
+                    "title": title,
+                    "created": False,
+                    "updated": True,
+                    "overwrote_title": True,
+                    "previous_updated_at": (
+                        exist["updated_at"].isoformat() if exist.get("updated_at") else None
+                    )
+                })
+                resp.headers["X-Overwrite-Notice"] = "overwrote_existing_title"
+                return resp, 200
+
+            # 沒有同名 → 新增
+            cur.execute("""
+                INSERT INTO user_trips (user_id, user_token, title, notes, base_trip_id, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+            """, (uid, tok, title, notes_json, base_trip_id))
+            new_id = cur.lastrowid
+
+        return jsonify({
+            "ok": True,
+            "id": new_id,
+            "user_trip_id": new_id,   # 兼容前端
+            "title": title,
+            "created": True,
+            "updated": False,
+            "overwrote_title": False
+        }), 201
+
+    except Exception as e:
+        # 直接把錯誤訊息丟回前端，方便你除錯
+        return jsonify({"ok": False, "error": f"{type(e).__name__}: {e}"}), 500
+
+
+@app.put("/api/user_trips/<int:trip_id>")
+def update_user_trip(trip_id: int):
+    conn = get_db()
+    uid  = current_user_id()
+    tok  = _request_uid()
+
+    data  = request.get_json(silent=True) or {}
+    title = (data.get("title") or "Untitled Trip").strip()
+
+    payload = {
+        "title": title,
+        "notes": data.get("notes"),
+        "stops": data.get("stops") or data.get("points") or [],
+        "days":  data.get("days") or [],
+        "meta":  data.get("meta") or {},
+    }
+    notes_json = json.dumps(payload, ensure_ascii=False)
+
+    try:
+        with conn.cursor() as cur:
+            # 只允許本人或同 token 更新
+            cur.execute("""
+                UPDATE user_trips
+                SET title=%s, notes=%s, updated_at=NOW()
+                WHERE id=%s AND (user_id <=> %s OR user_token=%s)
+            """, (title, notes_json, trip_id, uid, tok))
+
+            if cur.rowcount == 0:
+                return jsonify({ "ok": False, "error": "not_found_or_no_permission" }), 404
+
+        return jsonify({ "ok": True, "id": trip_id, "title": title })
+    except Exception as e:
+        return jsonify({ "ok": False, "error": f"{type(e).__name__}: {e}" }), 500
+
+
+@app.get("/api/user_trips")
+def list_user_trips():
+    conn = get_db()
+    uid = current_user_id()
+    tok = _request_uid()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, title, notes, created_at, updated_at
+                FROM user_trips
+                WHERE (user_id <=> %s OR user_token = %s)
+                ORDER BY COALESCE(updated_at, created_at) DESC
+                LIMIT 100
+            """, (uid, tok))
+            rows = cur.fetchall()
+        # 兼容欄位（前端有時用 trips，有時用 items）
+        for r in rows:
+            r["user_trip_id"] = r["id"]
+        return jsonify({"ok": True, "trips": rows, "items": rows}), 200
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"{type(e).__name__}: {e}"}), 500
+
+
+@app.get("/api/user_trips/<int:trip_id>")
+def get_user_trip(trip_id):
+    conn = get_db()
+    uid = current_user_id()
+    tok = _request_uid()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, user_id, user_token, title, notes, created_at, updated_at
+                FROM user_trips
+                WHERE id=%s AND ((user_id <=> %s) OR (user_token=%s))
+                LIMIT 1
+            """, (trip_id, uid, tok))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"ok": False, "error": "not_found"}), 404
+
+        # 解析 notes，若裡面有 days/stops 一併回傳
+        try:
+            notes_obj = json.loads(row.get("notes") or "{}")
+        except Exception:
+            notes_obj = {}
+
+        row["days"]   = notes_obj.get("days")  or []
+        row["points"] = notes_obj.get("stops") or notes_obj.get("points") or []
+
+        return jsonify({"ok": True, "trip": row, "points": row["points"], "days": row["days"]})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"{type(e).__name__}: {e}"}), 500
+
+
+# === Trip points endpoint (符合 travel_planner.sql 結構，保持原樣) ===
+@app.get("/api/trips/<int:trip_id>/points")
+def api_trip_points(trip_id: int):
+    """
+    回傳格式：
+      { ok: True, trip_id, points: [
+          { id, name, lat, lng, day, seq, meta_json }
+      ] }
+    來源：trip_points JOIN points
+    備援：若無 trip_points，嘗試用 trips.itinerary 的名稱去 points 模糊比對
+    """
+    conn = None
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            # 1) 主查：trip_points + points
+            cur.execute("""
+                SELECT
+                    p.id   AS point_id,
+                    p.name AS name,
+                    p.lat  AS lat,
+                    p.lng  AS lng,
+                    tp.seq AS seq
+                FROM trip_points tp
+                JOIN points p ON p.id = tp.point_id
+                WHERE tp.trip_id = %s
+                ORDER BY tp.seq ASC
+            """, (trip_id,))
+            rows = cur.fetchall() or []
+
+            if rows:
+                points = [{
+                    "id":        r["point_id"],
+                    "name":      r["name"],
+                    "lat":       float(r["lat"]),
+                    "lng":       float(r["lng"]),
+                    "day":       1,          # 目前資料表沒有 day，先固定 1
+                    "seq":       int(r["seq"]),
+                    "meta_json": None        # 目前資料表沒有 meta_json
+                } for r in rows]
+                return jsonify({ "ok": True, "trip_id": trip_id, "points": points })
+
+            # 2) 備援：用 trips.itinerary 名稱去找 points
+            cur.execute("SELECT itinerary FROM trips WHERE id=%s LIMIT 1", (trip_id,))
+            t = cur.fetchone()
+            if not t:
+                return jsonify({ "ok": False, "error": f"Trip {trip_id} not found" }), 404
+
+            names = []
+            raw = (t.get("itinerary") or "").strip()
+            if raw:
+                names = [x.strip() for x in raw.split(",") if x.strip()][:20]
+
+            points = []
+            for i, nm in enumerate(names, start=1):
+                cur.execute("""
+                    SELECT id, name, lat, lng
+                    FROM points
+                    WHERE name LIKE %s
+                    ORDER BY id DESC
+                    LIMIT 1
+                """, (f"%{nm}%",))
+                hit = cur.fetchone()
+                if hit:
+                    points.append({
+                        "id":        hit["id"],
+                        "name":      hit["name"],
+                        "lat":       float(hit["lat"]),
+                        "lng":       float(hit["lng"]),
+                        "day":       1,
+                        "seq":       i,
+                        "meta_json": None
+                    })
+
+            return jsonify({ "ok": True, "trip_id": trip_id, "points": points })
+
+    except Exception as e:
+        # 快速看錯誤原因
+        return jsonify({ "ok": False, "error": f"{type(e).__name__}: {e}" }), 500
+    finally:
+        try:
+            if conn: conn.close()
+        except:
+            pass

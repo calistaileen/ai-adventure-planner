@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Reset Password</title>
+
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="/static/forget.js" defer></script>
+
+  <style>
+    body.auth-bg{
+      min-height:100vh;
+      background:url("/static/images/loginbg.jpg") center/cover no-repeat fixed;
+    }
+    .auth-shell{
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:72px 16px;                 /* ruang aman atas/bawah */
+    }
+    /* Lebar dipersempit agar senada login */
+    .auth-card{
+      width:min(540px, 92vw);            /* <<< dipersempit */
+      background:rgba(255,255,255,0.96);
+      backdrop-filter:blur(2px);
+      border-radius:18px;
+      box-shadow:0 16px 48px rgba(0,0,0,.16);
+      padding:28px 26px 26px;
+    }
+    .auth-card h2{
+      text-align:center;
+      margin:6px 0 18px;
+      font-weight:800;
+      color:#4a3f35;
+    }
+    .auth-card form>*{ width:100%; }
+
+    .captcha{
+      display:grid;
+      grid-template-columns: 1fr 1.4fr auto;
+      gap:10px; align-items:center;
+      margin:8px 0;
+    }
+    .question{
+      border:1px dashed #c7bfb7;
+      border-radius:10px;
+      padding:12px 10px;
+      font-weight:700;
+      text-align:center;
+      background:#fffaf3;
+    }
+    .refresh{
+      padding:10px 14px;
+      border-radius:10px;
+      border:1px solid #d6cfc8;
+      background:#fff; cursor:pointer;
+    }
+    .refresh:hover{ background:#f6f2ec; }
+    .auth-card button[type="submit"]{ margin-top:12px; }
+    .helper{ text-align:center; margin-top:10px; }
+  </style>
+</head>
+<body class="auth-bg">
+  <header class="topbar" style="background:transparent; box-shadow:none; padding:14px 22px;">
+    <h1 class="logo">TrailSeeker</h1>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-card">
+      <h2>Reset your password</h2>
+
+      <form id="fpForm" autocomplete="off">
+        <input id="email" type="email" placeholder="Your email" required />
+        <input id="newpass" type="password" placeholder="New password" required />
+        <input id="repass" type="password" placeholder="Confirm new password" required />
+
+        <div class="captcha">
+          <div class="question" id="question">1 + 1 = ?</div>
+          <input id="answer" type="number" placeholder="Answer" required />
+          <button class="refresh" type="button" id="btnRefresh">New</button>
+        </div>
+
+        <button type="submit" class="btn">Reset Password</button>
+        <div class="helper"><a href="login.html">Back to Login</a></div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

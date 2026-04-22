@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Front Page</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/front.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo">TrailSeeker</h1>
+
+    <!-- Menu ⋮ -->
+    <div class="menu">
+      <button class="menu-btn" aria-label="Open menu" title="Menu">⋮</button>
+      <div class="menu-popover" id="menuPopover">
+        <a href="about.html">About us</a>
+        <a href="saved.html">Saved Itinerary</a>
+        <a href="chat.html">💬 Chatbot</a>
+        <button id="logoutBtn" class="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="front">
+    <!-- Country Picker -->
+    <section class="hero panel">
+      <label for="country" class="hero-label">Where would you like to go?</label>
+      <div class="hero-actions">
+        <div class="select-wrap">
+          <select id="country">
+            <option value="" selected disabled>Select a country</option>
+            <option value="Indonesia">Indonesia</option>
+            <option value="Malaysia">Malaysia</option>
+            <option value="Thailand">Thailand</option>
+          </select>
+        </div>
+        <button id="searchBtn" class="btn search-btn" aria-label="Search destinations">Search</button>
+      </div>
+    </section>
+
+    <!-- Popular Destinations -->
+    <section class="panel">
+      <h2 class="section-title">Popular Destinations</h2>
+
+      <div class="carousel-wrap">
+        <button class="carousel-btn prev" aria-label="Previous">‹</button>
+
+        <div id="popularTrack" class="carousel-track">
+          <!-- Cards will be injected by /static/home_popular.js -->
+        </div>
+
+        <button class="carousel-btn next" aria-label="Next">›</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+</section>

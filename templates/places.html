@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Places</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/places.js" defer></script>
+
+  <!-- STYLE KHUSUS GLASS UNTUK HALAMAN INI -->
+  <style>
+    /* body khusus halaman places */
+    body.places-page {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      color: #3a2b22;
+    }
+
+    /* main layout */
+    body.places-page main.front {
+      max-width: 1100px;
+      margin: 90px auto 60px;
+      padding: 0 20px 40px;
+    }
+
+    /* ====== GLASS UNTUK SEMUA KOTAK PUTIH (panel) ====== */
+    body.places-page .panel {
+      background: rgba(255, 255, 255, 0.10) !important;   /* bening */
+      backdrop-filter: blur(14px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+      border-radius: 24px !important;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.30) !important;
+      padding: 30px 36px !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    }
+
+    /* title section (yang Bali — Trips) */
+    body.places-page .panel:first-of-type {
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* judul & teks di atas glass */
+    body.places-page .section-title#title {
+      margin: 0 0 8px;
+      font-size: 32px;
+      font-weight: 800;
+      color: #2d1e16;
+    }
+
+    body.places-page #subtitle {
+      margin: 0;
+      font-size: 15px;
+      color: #4c3d34;
+    }
+
+    body.places-page .panel h3.section-title {
+      margin: 0 0 16px;
+      font-size: 24px;
+      font-weight: 800;
+      color: #2d1e16;
+    }
+
+    /* ====== TRIP CARDS (dibuat oleh JS: class="dest-card") ====== */
+    body.places-page #tripGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    body.places-page .dest-card {
+      background: rgba(255, 255, 255, 0.14) !important;
+      backdrop-filter: blur(18px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+      border-radius: 18px !important;
+      border: 1px solid rgba(255, 255, 255, 0.24) !important;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28) !important;
+      padding: 18px 20px !important;
+    }
+
+    body.places-page .dest-card strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 4px;
+      color: #2d1e16;
+    }
+
+    body.places-page .dest-card .small {
+      font-size: 13px;
+      color: #4c3d34;
+      line-height: 1.4;
+    }
+
+    /* tombol View on Map */
+    body.places-page .saved-view-btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: none;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #ffffff;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: 0.2s ease;
+    }
+
+    body.places-page .saved-view-btn:hover {
+      background: rgba(0, 0, 0, 0.88);
+      transform: translateY(-1px);
+    }
+
+    /* status text */
+    body.places-page #tripStatus {
+      margin-top: 12px !important;
+      font-size: 13px;
+      color: #3f332b;
+    }
+
+    /* back row */
+    body.places-page .start-panel .start-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    body.places-page .start-panel a {
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    body.places-page #backLink {
+      color: #2d1e16;
+      font-weight: 600;
+    }
+
+    body.places-page #backLink:hover {
+      text-decoration: underline;
+    }
+
+    body.places-page .start-btn {
+      padding: 9px 18px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.70);
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    body.places-page .start-btn:hover {
+      background: rgba(0, 0, 0, 0.88);
+    }
+  </style>
+</head>
+
+<body class="places-page">
+<header class="topbar">
+  <h1 class="logo">
+    <a href="/index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+  </h1>
+</header>
+
+<main class="front">
+  <section class="panel">
+    <h2 class="section-title" id="title">Places</h2>
+    <p class="small" id="subtitle"></p>
+  </section>
+
+  <section class="panel">
+    <h3 class="section-title">Choose a Trip</h3>
+    <div class="dest-grid" id="tripGrid"></div>
+    <p class="small" id="tripStatus">Loading...</p>
+  </section>
+
+  <section class="panel start-panel">
+    <div class="start-row">
+      <a id="backLink" href="#">← Back to Regions</a>
+      <a class="start-btn" id="plannerLink" href="#">Open Planner</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+</footer>
+</body>
+</html>

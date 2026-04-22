@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Rate Itinerary</title>
+
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="/static/rate.js" defer></script>
+  <style>
+    /* ===== Rating page layout ===== */
+    .rate-wrapper {
+      max-width: 960px;     /* lebar panel utama, cocok untuk laptop */
+      margin: 0 auto;
+    }
+
+    /* blok putih utama */
+    .rate-card {
+      padding: 28px 32px;
+      min-height: 260px;
+      width: 100%;          /* card ikut melebar memenuhi panel */
+    }
+
+    .rate-card h2 {
+      font-size: 1.4rem;
+      margin-bottom: 6px;
+    }
+
+    .rate-card .card-meta {
+      margin: 2px 0;
+      line-height: 1.4;
+    }
+
+    .rate-section-title {
+      font-size: 1rem;
+      margin: 14px 0 6px;
+    }
+
+    .star-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .star-row .star {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: none;
+      background: #f0e2cc;
+      cursor: pointer;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+
+    .star-row .star.selected {
+      background: #f6c453;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    .star-row .star:focus-visible {
+      outline: 2px solid #7a6445;
+      outline-offset: 2px;
+    }
+
+    .rating-hint {
+      margin-top: 4px;
+      font-size: 0.85rem;
+      color: #7a6445;
+    }
+
+    .review-input {
+      width: 100%;
+      min-height: 140px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid #e0d3c0;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .photo-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .photo-row input[type="file"] {
+      font-size: 0.9rem;
+    }
+
+    .photo-preview {
+      max-width: 100%;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .rate-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .btn.outline {
+      background: transparent;
+      color: #7a6445;
+      border: 1px solid #7a6445;
+    }
+
+    .error-text {
+      color: #b72e2e;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* ==== Override panel container khusus rate page (untuk laptop) ==== */
+    main.front .panel.rate-wrapper {
+      max-width: 960px;
+      width: 100%;
+    }
+        .dest-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .dest-field {
+      flex: 1 1 160px;
+      min-width: 0;
+    }
+
+    .select-input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid #e0d3c0;
+      background: #ffffff;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+
+    .select-input:focus-visible {
+      outline: 2px solid #7a6445;
+      outline-offset: 2px;
+    }
+
+  </style>
+
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo">
+      <a href="/index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+    </h1>
+  </header>
+
+  <main class="front">
+    <section class="panel rate-wrapper">
+      <h2 class="section-title">Rate this itinerary</h2>
+      <p class="small">
+        Give a rating, share your experience, and optionally upload a photo from your trip.
+      </p>
+    </section>
+
+    <section class="panel rate-wrapper">
+      <article class="card rate-card">
+        <header class="card-body">
+          <h2 id="tripTitle">Loading...</h2>
+          <p id="tripMeta" class="card-meta small"></p>
+        </header>
+
+        <section class="card-body">
+        <!-- Destination -->
+        <h3 class="rate-section-title">Destination</h3>
+        <div class="dest-row">
+            <div class="dest-field">
+            <label for="countrySelect" class="small">Country</label>
+            <select id="countrySelect" class="select-input">
+                <option value="">Select country</option>
+                <option value="Indonesia">Indonesia</option>
+                <option value="Malaysia">Malaysia</option>
+                <option value="Thailand">Thailand</option>
+            </select>
+            </div>
+            <div class="dest-field">
+            <label for="regionSelect" class="small">Region</label>
+            <select id="regionSelect" class="select-input" disabled>
+                <option value="">Select region</option>
+            </select>
+            </div>
+        </div>
+        <div id="destinationError" class="error-text" style="display:none;">
+            Please choose country and region.
+        </div>
+
+          <!-- Rating -->
+          <h3 class="rate-section-title">Rating</h3>
+          <div class="star-row" id="starRow">
+            <button type="button" class="star" data-value="1" aria-label="1 star">★</button>
+            <button type="button" class="star" data-value="2" aria-label="2 stars">★</button>
+            <button type="button" class="star" data-value="3" aria-label="3 stars">★</button>
+            <button type="button" class="star" data-value="4" aria-label="4 stars">★</button>
+            <button type="button" class="star" data-value="5" aria-label="5 stars">★</button>
+          </div>
+          <div id="ratingHint" class="rating-hint">Tap a star to rate this trip.</div>
+          <div id="ratingError" class="error-text" style="display:none;">Please select a rating.</div>
+
+          <!-- Review -->
+          <h3 class="rate-section-title">Review</h3>
+          <textarea id="reviewInput" class="review-input" placeholder="Share what you liked, tips, or anything other travelers should know."></textarea>
+
+          <!-- Photo upload -->
+          <h3 class="rate-section-title">Photo (optional)</h3>
+          <div class="photo-row">
+            <input type="file" id="photoInput" accept="image/*"/>
+            <img id="photoPreview" class="photo-preview" alt="Trip photo preview"/>
+            <div id="photoError" class="error-text" style="display:none;"></div>
+          </div>
+        </section>
+
+        <footer class="card-footer rate-actions">
+          <button id="btnBackSaved" class="btn outline" type="button">← Back to Saved</button>
+          <button id="btnSaveReview" class="btn" type="button">Save rating</button>
+        </footer>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="legal small">
+      © <span id="year"></span> TrailSeeker. All rights reserved.
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

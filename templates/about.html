@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — About Us</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo">
+      <a href="index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+    </h1>
+  </header>
+
+  <!-- TAMBAH class about-page DI SINI -->
+  <main class="front about-page">
+    <!-- Hero Intro -->
+    <section class="panel">
+      <h2 class="section-title">About Us</h2>
+      <p class="small">
+        Discover who we are and what drives us to help travelers like you.
+      </p>
+    </section>
+
+    <!-- Story -->
+    <section class="panel">
+      <h3 class="section-title">Our Story</h3>
+      <p>
+        Founded in <strong>2025</strong>, TrailSeeker was born out of a simple vision:
+        to make travel planning <em>smarter, easier, and more inspiring</em>.
+        Starting from Southeast Asia, our platform currently focuses on
+        <strong>Indonesia</strong>, <strong>Malaysia</strong>, and <strong>Thailand</strong> —
+        three countries rich in culture, nature, and unforgettable experiences.
+      </p>
+      <p>
+        We noticed that many travelers spend countless hours browsing blogs, forums,
+        and scattered apps just to put together a trip.
+        TrailSeeker brings everything into one elegant space —
+        <strong>plan, save, and share itineraries</strong> seamlessly.
+      </p>
+    </section>
+
+    <!-- Mission & Vision -->
+    <section class="panel">
+      <h3 class="section-title">Our Mission</h3>
+      <p>
+        To empower every traveler to design their own unique journey,
+        while encouraging sustainable and mindful tourism.
+      </p>
+
+      <h3 class="section-title">Our Vision</h3>
+      <p>
+        To become the leading travel planning platform in Asia,
+        trusted by adventurers, explorers, and dreamers around the world.
+      </p>
+    </section>
+
+    <!-- Values -->
+    <section class="panel">
+      <h3 class="section-title">Our Core Values</h3>
+      <ul class="about-values-list">
+        <li><strong>Simplicity:</strong> Travel planning should be stress-free and intuitive.</li>
+        <li><strong>Inspiration:</strong> Spark wanderlust through curated destinations and ideas.</li>
+        <li><strong>Community:</strong> Share and connect with other like-minded travelers.</li>
+        <li><strong>Sustainability:</strong> Respect local cultures and the environment.</li>
+      </ul>
+    </section>
+
+    <!-- Contact -->
+    <section class="panel start-panel">
+      <div class="start-row">
+        <div>
+          <h3 class="section-title">Get in Touch</h3>
+          <p class="small">
+            Have feedback, questions, or collaboration ideas? <br/>
+            Reach us at: <a href="mailto:support@trailseeker.app">support@trailseeker.app</a>
+          </p>
+        </div>
+        <a class="start-btn" href="index.html">← Back to Front Page</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

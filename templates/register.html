@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Register</title>
+
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="/static/register.js" defer></script>
+
+  <style>
+    /* Background sama seperti login */
+    body.auth-bg{
+      min-height:100vh;
+      background:url("/static/images/loginbg.jpg") center/cover no-repeat fixed;
+    }
+    /* Center shell + ada ruang dari tepi */
+    .auth-shell{
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:72px 16px;                 /* biar tidak nempel ke atas */
+    }
+    /* Card ramping (± login) */
+    .auth-card{
+      width:min(560px, 92vw);            /* <<< dipersempit */
+      background:rgba(255,255,255,0.96);
+      backdrop-filter:blur(2px);
+      border-radius:18px;
+      box-shadow:0 16px 48px rgba(0,0,0,.16);
+      padding:28px 26px 26px;
+    }
+    .auth-card h2{
+      text-align:center;
+      margin:6px 0 18px;
+      font-weight:800;
+      color:#4a3f35;
+    }
+    .auth-card form>*{ width:100%; }
+    .inline{ display:flex; gap:10px; }
+    .inline>*{ flex:1; }
+    .helper{ text-align:center; margin-top:10px; }
+    .auth-card button[type="submit"]{ margin-top:12px; }
+  </style>
+</head>
+<body class="auth-bg">
+  <header class="topbar" style="background:transparent; box-shadow:none; padding:14px 22px;">
+    <h1 class="logo">TrailSeeker</h1>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-card">
+      <h2>Create your account</h2>
+
+      <form id="regForm" autocomplete="on">
+        <input id="username" type="text" placeholder="Username" required />
+        <input id="email" type="email" placeholder="Email" required />
+        <input id="full_name" type="text" placeholder="Full name" required />
+
+        <div class="inline">
+          <input id="birthday" type="date" />
+          <select id="gender">
+            <option value="">Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <input id="password" type="password" placeholder="Password" required />
+        <input id="repass" type="password" placeholder="Re-enter Password" required />
+
+        <button id="submitBtn" type="submit" class="btn">Create account</button>
+        <div class="helper">Already have an account? <a href="login.html">Login</a></div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

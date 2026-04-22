@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Chatbot</title>
+
+  <link rel="stylesheet" href="/static/style.css">
+  <script>window.TS_APP = window.TS_APP || {};</script>
+  <script src="/static/chat.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo">
+      <a href="/index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+    </h1>
+  </header>
+
+      <main class="front">
+      <section class="panel">
+        <div class="panel-card">
+          <h2 class="section-title">Live Chat — Customer Support</h2>
+
+          <!-- Ellie chatbot -->
+          <section id="ellie-chat" data-chat="ellie">
+            <div id="chat" class="chat-wrap">
+              <div id="chatLog" class="chat-log" aria-live="polite"></div>
+
+                <form id="chatForm" class="chat-form">
+                  <div class="chat-input-box">
+                    <input id="chatInput" class="chat-input" type="text"
+                          placeholder="Type a city/region in Indonesia..." autocomplete="off" />
+                    <button id="chatSend" class="chat-send-btn" type="submit" title="Send message">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </form>
+
+              <a class="back-link" href="/index.html">← Back to Front Page</a>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+  <footer class="site-footer">
+    <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

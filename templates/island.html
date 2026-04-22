@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Island</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo">TrailSeeker</h1>
+  </header>
+
+  <main class="front">
+    <section class="panel">
+      <h2 class="section-title" id="islandTitle">Island</h2>
+      <p class="small" id="islandSubtitle">Cities & places with short descriptions.</p>
+    </section>
+
+    <section class="panel">
+      <h3 class="section-title">Cities & Places</h3>
+      <div class="dest-grid" id="placeGrid"></div>
+      <p class="small" id="status" style="margin-top:12px"></p>
+    </section>
+
+    <section class="panel start-panel">
+      <div class="start-row">
+        <a href="javascript:history.back()">← Back</a>
+        <a class="start-btn" href="my-itinerary.html">Start planning</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // ===== Dataset tempat per pulau (bisa kamu sambung ke API nanti) =====
+    const PLACES = {
+      Java: [
+        { name:"Yogyakarta", desc:"Temples Borobudur–Prambanan, art scene, and street food." },
+        { name:"Bromo–Tengger", desc:"Volcanic sea of sand with sunrise viewpoints." },
+        { name:"Ijen", desc:"Sulfur crater lake with blue flame hikes." },
+        { name:"Bandung", desc:"Cool highlands, coffee, and creative culture." },
+        { name:"Jakarta", desc:"Capital city—heritage old town & culinary mix." }
+      ],
+      Bali: [
+        { name:"Ubud", desc:"Rice terraces, temples, wellness & crafts." },
+        { name:"Uluwatu", desc:"Clifftop temple, surf breaks, epic sunsets." },
+        { name:"Canggu", desc:"Cafés, coworking, and mellow beach surf." },
+        { name:"Nusa Penida", desc:"Dramatic cliffs, Kelingking & Manta rays." }
+      ],
+      Sumatra: [
+        { name:"Lake Toba", desc:"Crater lake island, Batak villages & viewpoints." },
+        { name:"Bukit Lawang", desc:"Orangutan treks and jungle rivers." },
+        { name:"Padang", desc:"Gateway to Mentawai surfing & Minang cuisine." }
+      ],
+      Lombok: [
+        { name:"Kuta Mandalika", desc:"White-sand bays and laid-back surf vibe." },
+        { name:"Mount Rinjani", desc:"Challenging volcano trek with crater lake." },
+        { name:"Gili Islands", desc:"Car-free isles for snorkeling and sunsets." }
+      ],
+      NusaTenggara: [
+        { name:"Komodo National Park", desc:"Komodo dragons, pink beaches, manta snorkeling." },
+        { name:"Labuan Bajo", desc:"Harbor town and liveaboard base." },
+        { name:"Flores (Bajawa)", desc:"Volcanic landscapes and traditional villages." }
+      ],
+      Kalimantan: [
+        { name:"Tanjung Puting", desc:"Houseboat into rainforests to see orangutans." },
+        { name:"Derawan Islands", desc:"Turquoise water, turtles, and stingless jellyfish lake." },
+        { name:"Pontianak", desc:"Equator monument & riverfront markets." }
+      ],
+      Sulawesi: [
+        { name:"Tana Toraja", desc:"Cliff graves & striking highland culture." },
+        { name:"Bunaken", desc:"World-class wall diving and healthy reefs." },
+        { name:"Makassar", desc:"Fort Rotterdam & seafood on Losari." }
+      ],
+      Maluku: [
+        { name:"Banda Islands", desc:"Nutmeg history, clear waters, and volcano views." },
+        { name:"Ambon", desc:"Diving spots and island-hopping coves." },
+        { name:"Ora Beach (Seram)", desc:"Stilts cabins over glassy lagoon." }
+      ],
+      Papua: [
+        { name:"Raja Ampat", desc:"Biodiversity hotspot with karst islets & coral gardens." },
+        { name:"Wamena & Baliem", desc:"Highland culture and valley treks." }
+      ]
+    };
+
+    // baca query ?island=Key
+    const params = new URLSearchParams(location.search);
+    const key = params.get("island") || "Java";
+    const list = PLACES[key] || [];
+
+    // judul & subtitle
+    const titleMap = {
+      Java:"Java", Bali:"Bali", Sumatra:"Sumatra", Lombok:"Lombok",
+      NusaTenggara:"Nusa Tenggara (Flores–Komodo)", Kalimantan:"Kalimantan (Borneo)",
+      Sulawesi:"Sulawesi", Maluku:"Maluku (Moluccas)", Papua:"Papua (West Papua)"
+    };
+    document.getElementById("islandTitle").textContent = titleMap[key] || key;
+    document.getElementById("islandSubtitle").textContent =
+      "Select a city/place to start exploring highlights and plan your route.";
+
+    const grid = document.getElementById("placeGrid");
+    const status = document.getElementById("status");
+
+    if (list.length === 0) {
+      status.textContent = "No data yet for this island.";
+    } else {
+      status.textContent = `Showing ${list.length} places`;
+      list.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "dest-card";
+        card.innerHTML = `
+          <div style="display:grid;gap:6px;justify-items:center;text-align:center">
+            <strong>${p.name}</strong>
+            <span class="small" style="max-width:36ch">${p.desc}</span>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Regions</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="/static/regions.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <h1 class="logo">
+    <a href="/index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+  </h1>
+</header>
+
+<main class="front">
+  <section class="panel">
+    <h2 class="section-title" id="title">Provinces</h2>
+    <p class="small" id="subtitle">Pick a province to explore cities & highlights.</p>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">Choose a Province</h2>
+
+    <div class="carousel-wrap">
+      <button class="carousel-btn prev" aria-label="Previous">‹</button>
+
+      <div id="provinceCarousel" class="carousel-track">
+        <!-- Slides injected by regions.js -->
+      </div>
+
+      <button class="carousel-btn next" aria-label="Next">›</button>
+    </div>
+
+    <p id="provInfo" class="muted" style="margin-top:12px;"></p>
+  </section>
+
+  <section class="panel start-panel">
+    <div class="start-row">
+      <a href="/index.html">← Back to Front Page</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+</footer>
+</body>
+</html>

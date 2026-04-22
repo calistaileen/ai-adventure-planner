@@ -1,0 +1,201 @@
+// === 分段計算（支援 FLIGHT/TRAIN/BUS/FERRY/MANUAL 與 TRANSIT 出發時間） ===
+async function recomputeRouteV2(){
+  const todays = (stops||[]).filter(s => (s.day ?? 1) === getCurrentDay() && isValidPos(s.position));
+  if (todays.length < 2){
+    directionsRenderer && directionsRenderer.setDirections({ routes:[] });
+    updateRouteSummary && updateRouteSummary({ status:`Day ${currentDay}：沒有足夠的有效座標` });
+    renderModeBreakdown && renderModeBreakdown({});
+    return;
+  }
+
+  let sumMeters = 0, sumSeconds = 0;
+  const byMode = {};
+  let lastGood = null;
+
+  for (let i=1; i<todays.length; i++){
+    const A = todays[i-1], B = todays[i];
+    const leg = B.leg || (B.leg = {});
+    let m = (leg.mode || window.travelMode || 'DRIVING').toUpperCase();
+
+    // ① 已指定為非 Google 模式 → 不打 Directions
+    if (['MANUAL','FERRY','FLIGHT','TRAIN','BUS'].includes(m)) {
+      const dKm = (leg.manualDistanceKm != null) ? leg.manualDistanceKm : haversineKm(A.position, B.position);
+      const minutes = (leg.manualDurationMin != null)
+        ? leg.manualDurationMin
+        : Math.round((dKm / (leg.cruiseKmh || guessCruiseKmh(m))) * 60) + (leg.bufferMin ?? guessBufferMin(m));
+      const incMeters = dKm * 1000, incSeconds = minutes * 60;
+      sumMeters += incMeters; sumSeconds += incSeconds;
+      byMode[m] = byMode[m] || { meters:0, seconds:0 };
+      byMode[m].meters += incMeters; byMode[m].seconds += incSeconds;
+      continue;
+    }
+
+    // ② 自動偵測跨海 → 直接標為 FERRY 並略過 Directions
+    const autoFerry = await maybeDetectFerry(A, B, leg);
+    if (autoFerry) {
+      const dKm = leg.manualDistanceKm ?? haversineKm(A.position, B.position);
+      const minutes = leg.manualDurationMin ?? (Math.round((dKm / 35) * 60) + 30);
+      const incMeters = dKm * 1000, incSeconds = minutes * 60;
+      sumMeters += incMeters; sumSeconds += incSeconds;
+      byMode['FERRY'] = byMode['FERRY'] || { meters:0, seconds:0 };
+      byMode['FERRY'].meters += incMeters;
+      byMode['FERRY'].seconds += incSeconds;
+      continue;
+    }
+
+    // ③ 其餘（DRIVING/WALKING/BICYCLING/TRANSIT）→ Directions
+    const res = await routeOnce({
+      origin: A.position,
+      destination: B.position,
+      travelMode: google.maps.TravelMode[m] || google.maps.TravelMode.DRIVING
+    });
+    if (res && res.routes && res.routes[0]) {
+      lastGood = res;
+      const legs = res.routes[0].legs || [];
+      const meters  = legs.reduce((a,L)=>a+(L.distance?.value||0),0);
+      const seconds = legs.reduce((a,L)=>a+(L.duration?.value||0),0);
+      sumMeters += meters; sumSeconds += seconds;
+      byMode[m] = byMode[m] || { meters:0, seconds:0 };
+      byMode[m].meters  += meters;
+      byMode[m].seconds += seconds;
+    } else {
+      // ④ 後備：仍無解 → 記為 MANUAL 估算，避免刷錯
+      const dKm = haversineKm(A.position, B.position);
+      const minutes = Math.round((dKm / guessCruiseKmh('BUS')) * 60) + guessBufferMin('BUS');
+      sumMeters += dKm*1000; sumSeconds += minutes*60;
+      const key = 'MANUAL';
+      byMode[key] = byMode[key] || { meters:0, seconds:0 };
+      byMode[key].meters += dKm*1000;
+      byMode[key].seconds += minutes*60;
+    }
+  }
+
+  if (lastGood) directionsRenderer.setDirections(lastGood);
+  updateRouteSummary && updateRouteSummary({ meters: sumMeters, seconds: sumSeconds });
+  renderModeBreakdown && renderModeBreakdown(byMode);
+}
+
+// === 重新規劃當日路線===
+async function recomputeRouteSmart(day){
+  // 0) day 預設為目前天
+  if (typeof day === 'undefined') {
+    try { if (typeof getCurrentDay === 'function') day = Number(getCurrentDay()) || 1; }
+    catch(_) { /* ignore */ }
+    if (!day) day = Number(window.currentDay || 1) || 1;
+  }
+
+  // 1) 等地圖/服務可用
+  try { if (typeof waitForMapReady === 'function') await waitForMapReady(); } catch(_) {}
+  try { if (typeof ensureServices   === 'function') ensureServices(); } catch(_) {}
+
+  // 2) 取「當日」的 stops（不要用全部 stops）
+  const todays = (typeof getStopsOfDay === 'function')
+    ? (getStopsOfDay(day) || [])
+    : ((window.stops || []).filter(s => (s?.day ?? 1) === day));
+
+  if (!Array.isArray(todays) || todays.length < 2) {
+    // 沒兩個點就清線並退出
+    try { window.directionsRenderer?.set('directions', null); } catch(_) {}
+    console.log('[recomputeRouteSmart] skip — stops too few for day', day, '(len=', (todays||[]).length, ')');
+    if (typeof refreshTimeline === 'function') refreshTimeline();
+    return;
+  }
+
+  // 3) 只拿有合法座標的點（並補成 {lat,lng}）
+  const valid = todays.filter(s => {
+    const p  = s && (s.position || s.location || s);
+    const ll = (typeof toLatLngLiteral === 'function') ? toLatLngLiteral(p) : p;
+    if (ll && typeof ll.lat === 'number' && typeof ll.lng === 'number') s.position = ll;
+    return !!(s.position && typeof s.position.lat === 'number' && typeof s.position.lng === 'number');
+  });
+
+  if (valid.length < 2) {
+    console.warn('[SMART] 當日有效座標不足，skip route');
+    try { window.directionsRenderer?.set('directions', null); } catch(_) {}
+    if (typeof refreshTimeline === 'function') refreshTimeline();
+    return;
+  }
+
+  // 4) 逐段算模式（寫進 stops[i].leg.mode）
+  for (let i = 1; i < valid.length; i++) {
+    const A = valid[i-1], B = valid[i];
+    try{
+      const leg = await routeLegSmart(A,B);
+      B.leg = Object.assign(B.leg || {}, { mode: leg?.mode || B.leg?.mode || 'MANUAL' });
+    }catch(e){ console.warn('[SMART] routeLegSmart error', e); }
+  }
+
+  // 5) DirectionsRenderer 畫整體線（不指定模式，單純給視覺路徑）
+  try{
+    const gmReady = !!(window.google && google.maps && window.directionsService);
+    if (gmReady && window.directionsRenderer && valid.length >= 2) {
+      const req = {
+        origin: valid[0].position,
+        destination: valid[valid.length - 1].position,
+        waypoints: valid.slice(1, -1).map(s => ({ location: s.position })),
+        travelMode: google.maps.TravelMode.DRIVING, // 這裡用 DRIVING 只是拿一條「可視路徑」
+      };
+      const res = await new Promise((resolve, reject)=>{
+        directionsService.route(req, (r, status)=>(
+          status==='OK'||status===google.maps.DirectionsStatus.OK ? resolve(r) : reject(status)
+        ));
+      });
+      setDirectionsSafe(window.directionsRenderer, res);
+    }
+  }catch(e){
+    console.warn('[SMART] setDirections failed', e);
+  }
+
+  // 5.1) 用覆蓋線標出「非陸路」段（不會影響 DirectionsRenderer）
+  // 先清舊覆蓋
+  if (!Array.isArray(window.SEG_overlays)) window.SEG_overlays = [];
+  window.SEG_overlays.forEach(p=> p.setMap && p.setMap(null));
+  window.SEG_overlays.length = 0;
+
+  // 逐段畫 geodesic（只畫 FERRY / FLIGHT / MANUAL）
+  for (let i = 1; i < valid.length; i++) {
+    const A = valid[i-1], B = valid[i];
+    const mode = (B?.leg?.mode || '').toUpperCase();
+    if (!['FERRY', 'FLIGHT', 'MANUAL'].includes(mode)) continue;
+
+    const poly = new google.maps.Polyline({
+      geodesic: true,
+      strokeOpacity: 0.9,
+      strokeWeight: 4,
+      strokeColor: (mode==='FERRY' ? '#2b7' : mode==='FLIGHT' ? '#06f' : '#999'),
+      path: [A.position, B.position],
+      map
+    });
+    window.SEG_overlays.push(poly);
+  }
+
+  // 6) 更新 UI：時間軸 / 視野 / 標記
+  try { if (typeof refreshTimeline            === 'function') refreshTimeline(); } catch(_) {}
+  try { if (typeof fitToRoute                 === 'function') fitToRoute(); } catch(_) {}
+  try { if (typeof buildMarkersForAllStops    === 'function') buildMarkersForAllStops(); } catch(_) {}
+
+  window.SMART_READY = true;
+}
+
+
+
+  if (typeof window.hideHoverCard !== 'function') {
+    window.hoverHideTimer && clearTimeout(window.hoverHideTimer);
+    window.hoverHideTimer = null;
+    window.hideHoverCard = function(ms, opt){
+      ms = (typeof ms === 'number') ? ms : 0;
+      opt = opt || {};
+      var force = !!opt.force;
+      var el = document.getElementById('hover-card');
+      if (!el) return;
+      if (!force && window.__hcShownAt && (Date.now() - window.__hcShownAt) < 120) return;
+      if (!force && el.dataset && el.dataset.sticky === '1') return;
+      if (!force && el.dataset && el.dataset.hover === '1') return;
+      clearTimeout(window.hoverHideTimer);
+      var doHide = function(){
+        var c = document.getElementById('hover-card'); if (!c) return;
+        c.style.opacity = 0; c.style.display = 'none';
+      };
+      window.hoverHideTimer = (ms > 0) ? setTimeout(doHide, ms) : (doHide(), null);
+    };
+  }

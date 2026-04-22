@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrailSeeker — Planner</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/planner.js" defer></script>
+  <style>
+    .frame-wrap{height:78vh;border:1px solid #e7e1db;border-radius:12px;overflow:hidden}
+    iframe{width:100%;height:100%;border:0;background:#fff}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+  <h1 class="logo">
+    <a href="/index.html" style="text-decoration:none; color:inherit;">TrailSeeker</a>
+  </h1>
+</header>
+
+
+  <main class="front">
+    <section class="panel">
+      <h2 class="section-title">Trip Planner</h2>
+      <p class="small">Use the planner to pick <em>country → region</em>, see trips, and open maps.</p>
+    </section>
+
+    <section class="panel">
+      <div class="frame-wrap">
+        <iframe id="plannerFrame" src=""></iframe>
+      </div>
+      <p class="small" style="margin-top:10px">Tip: buka peta, lalu zoom/pan sesuai rencana kamu.</p>
+    </section>
+
+    <section class="panel start-panel">
+      <div class="start-row">
+        <a href="index.html">← Back to Front Page</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="legal small">© <span id="year"></span> TrailSeeker. All rights reserved.</div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    const params = new URLSearchParams(location.search);
+    const country = params.get("country") || "";
+    const base = "http://127.0.0.1:5000/";
+    document.getElementById("plannerFrame").src = country ? (base + "?country=" + encodeURIComponent(country)) : base;
+  </script>
+</body>
+</html>
